@@ -25,10 +25,19 @@ const INVERSE_PERMUTATION_TABLE: [u8; 64] = [
     34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25,
 ];
 
-fn get_permutated_block(plaintext_u64_block: u64, permutation_table: [u8; 64]) -> u64 {
+const PC_1_TABLE: [u8; 56] = [
+    57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35, 27, 19, 11, 3, 60,
+    52, 44, 36, 63, 55, 47, 39, 31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37, 29,
+    21, 13, 5, 28, 20, 12, 4,
+];
+
+fn get_permutated_block<const N: usize>(
+    plaintext_u64_block: u64,
+    permutation_table: [u8; N],
+) -> u64 {
     let mut permutated_block: u64 = 0;
-    for index in 0..64 {
-        let target_bit_index = permutation_table[index] - 1;
+    for index in 0..N {
+        let target_bit_index: u8 = permutation_table[index] - 1;
         let bit = plaintext_u64_block >> target_bit_index & 1;
         let new_block_with_bit = bit << index;
         permutated_block |= new_block_with_bit;
@@ -56,4 +65,15 @@ fn main() {
     let permutated_block = get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE);
     println! {"permutated binary\n{}", format!("{:064b}", permutated_block)};
     println! {"permutated hex\n{}", format!("{:X}", permutated_block)};
+
+    // let key_block = u64::from_str_radix(
+    //     &"0001001100110100010101110111100110011011101111001101111111110001",
+    //     2,
+    // )
+    // .ok()
+    // .unwrap();
+    // let permutated_key_block = get_permutated_block(key_block, PC_1_TABLE);
+    // println! {"key binary\n{}", format!("{:064b}", permutated_key_block)};
+    // println! {"key binary\n{}", format!("{:056b}", permutated_key_block)};
+    // println! {"key hex\n{}", format!("{:X}", permutated_key_block)};
 }
