@@ -1,6 +1,4 @@
 use clap::Parser;
-use hex::FromHex;
-use log::{debug, info};
 
 /// Simple program to encrypt plaintext, and then show processes and, decrpyt to validate.
 #[derive(Parser, Debug)]
@@ -21,6 +19,17 @@ const INITIAL_PERMUTATION_TABLE: [u64; 64] = [
     53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7,
 ];
 
+fn get_permutated_block(plaintext_u64_block: u64) -> u64 {
+    let mut permutated_block: u64 = 0;
+    for index in 0..64 {
+        let target_bit_index: u64 = INITIAL_PERMUTATION_TABLE[index] - 1;
+        let bit = plaintext_u64_block >> target_bit_index & 1;
+        let new_block_with_bit = bit << index;
+        permutated_block |= new_block_with_bit;
+    }
+    return permutated_block;
+}
+
 fn main() {
     let args = Args::parse();
     let plaintext_input = args.plaintext;
@@ -38,20 +47,9 @@ fn main() {
         }
     });
 
-    // 0000001001000110100010101100111011101100101010000110010000100000
-    // format
-    // 1001000110100010101100111011101100101010000110010000100000
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
-
-    println! {"{}", format!("{:064b}", plaintext_u64_block)};
-    println!("");
-    let mut permutated_block: u64 = 0;
-    for index in 0..64 {
-        let target_bit_index: u64 = INITIAL_PERMUTATION_TABLE[index] - 1;
-        let bit = plaintext_u64_block >> target_bit_index & 1;
-        let new_block_with_bit = bit << index;
-        permutated_block |= new_block_with_bit;
-    }
-    println!("{}", "");
-    println! {"{}", format!("{:064b}", permutated_block)};
+    println! {"plaintext binary:\n{}", format!("{:064b}", plaintext_u64_block)};
+    let permutated_block = get_permutated_block(plaintext_u64_block);
+    println! {"permutated binary\n{}", format!("{:064b}", permutated_block)};
+    println! {"permutated hex\n{}", format!("{:X}", permutated_block)};
 }
