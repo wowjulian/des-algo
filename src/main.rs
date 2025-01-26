@@ -36,22 +36,20 @@ fn get_permutated_block(plaintext_u64_block: u64, permutation_table: [u8; 64]) -
     return permutated_block;
 }
 
+fn check_string_is_ascii_hexdigit(s: String) -> bool {
+    return s.chars().all(|c| c.is_ascii_hexdigit());
+}
+
 fn main() {
     let args = Args::parse();
     let plaintext_input = args.plaintext;
     let key_input = args.key;
-
-    plaintext_input.chars().for_each(|c| {
-        if !c.is_ascii_hexdigit() {
-            panic!("is not hex digit");
-        }
-    });
-
-    key_input.chars().for_each(|c| {
-        if !c.is_ascii_hexdigit() {
-            panic!("is not hex digit");
-        }
-    });
+    if !check_string_is_ascii_hexdigit(plaintext_input.clone()) {
+        panic!("plaintext is not hexdigit");
+    }
+    if !check_string_is_ascii_hexdigit(key_input.clone()) {
+        panic!("key is not hexdigit");
+    }
 
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     println! {"plaintext binary:\n{}", format!("{:064b}", plaintext_u64_block)};
