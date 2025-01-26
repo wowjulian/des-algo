@@ -46,6 +46,24 @@ fn get_permutated_block<const N: usize>(u64_block: u64, permutation_table: [u8; 
 fn check_string_is_ascii_hexdigit(s: String) -> bool {
     return s.chars().all(|c| c.is_ascii_hexdigit());
 }
+
+// let left_split_key_pad: u64 = u64::from_str_radix(
+//     &"0000000011111111111111111111111111110000000000000000000000000000",
+//     2,
+// )
+// .unwrap();
+const LEFT_SPLIT_KEY_PAD: u64 = 72057593769492480;
+// let right_split_key_pad: u64 = u64::from_str_radix(
+//     &"0000000000000000000000000000000000001111111111111111111111111111",
+//     2,
+// )
+// .unwrap();
+const RIGHT_SPLIT_KEY_PAD: u64 = 268435455;
+fn split_permutated_key(key: u64, chunk_size: usize) -> (u64, u64) {
+    let left_split_block: u64 = (key & LEFT_SPLIT_KEY_PAD) >> chunk_size;
+    let right_split_block: u64 = key & RIGHT_SPLIT_KEY_PAD;
+    return (left_split_block, right_split_block);
+}
 fn main() {
     let args = Args::parse();
     let plaintext_input = args.plaintext;
@@ -71,4 +89,6 @@ fn main() {
     let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE);
     // expected to be 0000000011110000110011001010101011110101010101100110011110001111
     println! {"permutated key binary is (64):\n{}", format!("{:064b}", permutated_key_block)};
+
+    split_permutated_key(permutated_key_block, 28);
 }
