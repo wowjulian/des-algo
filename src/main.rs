@@ -78,24 +78,22 @@ fn split_permutated_key(key: u64, chunk_size: usize) -> (u64, u64) {
 // 1111 1111 1111 1111 1111 1111 1111
 const BIT_PAD_28: u64 = 268435455;
 fn left_shift_28_bit_pair(left_key: u64, right_key: u64, shift_size: usize) -> (u64, u64) {
-    let mut left_shifted_key = 0;
-    let mut right_shifted_key = 0;
+    let mut mutated_left_key = left_key;
+    let mut mutated_right_key = right_key;
+
     for _index in 0..shift_size {
-        let left_key_left_most_bit = (1 << 27) & left_key;
-        let right_key_left_most_bit = (1 << 27) & right_key;
+        let left_key_left_most_bit = (1 << 27) & mutated_left_key;
+        let right_key_left_most_bit = (1 << 27) & mutated_right_key;
 
         let left_key_bit = (left_key_left_most_bit >> 27) & 1;
         let right_key_bit = (right_key_left_most_bit >> 27) & 1;
-        left_shifted_key = (left_key << 1) | left_key_bit;
-        right_shifted_key = (right_key << 1) | right_key_bit;
+        mutated_left_key = ((mutated_left_key << 1) | left_key_bit) & BIT_PAD_28;
+        mutated_right_key = ((mutated_right_key << 1) | right_key_bit) & BIT_PAD_28;
     }
-    return (
-        left_shifted_key & BIT_PAD_28,
-        right_shifted_key & BIT_PAD_28,
-    );
+    return (mutated_left_key, mutated_right_key);
 }
 
-const PC1_SHIGT_SIZES: [usize; 16] = [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1];
+const PC1_SHIGT_SIZES: [usize; 16] = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1];
 fn get_pc1_shifted_keys(left_key: u64, right_key: u64) -> [(u64, u64); 16] {
     let mut pairs: [(u64, u64); 16] = [(0, 0); 16];
     let mut prev_left = left_key;
@@ -144,5 +142,6 @@ fn main() {
         let (left, right) = permuted_pc1_keys[i];
         println!("C{} - LEFT [{}] ", i + 1, format!("{:064b}", left));
         println!("D{} - RIGHT[{}]", i + 1, format!("{:064b}", right));
+        println!("");
     }
 }
