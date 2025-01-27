@@ -36,6 +36,10 @@ const PC_2_TABLE: [u8; 48] = [
     31, 37, 47, 55, 30, 40, 51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32,
 ];
 
+fn check_string_is_ascii_hexdigit(s: String) -> bool {
+    return s.chars().all(|c| c.is_ascii_hexdigit());
+}
+
 fn get_permutated_block<const N: usize>(u64_block: u64, permutation_table: [u8; N]) -> u64 {
     let mut permutated_block: u64 = 0;
     for index in 0..N {
@@ -46,10 +50,6 @@ fn get_permutated_block<const N: usize>(u64_block: u64, permutation_table: [u8; 
         permutated_block |= new_block_with_bit;
     }
     return permutated_block;
-}
-
-fn check_string_is_ascii_hexdigit(s: String) -> bool {
-    return s.chars().all(|c| c.is_ascii_hexdigit());
 }
 
 // let left_split_key_pad: u64 = u64::from_str_radix(
@@ -100,6 +100,24 @@ fn get_pc1_shifted_keys(left_key: u64, right_key: u64) -> [(u64, u64); 16] {
     return pairs;
 }
 
+// 1100 == 12
+// 1100 >> 2 == 3 (0011)
+
+fn get_permutated_block2<const N: usize>(u64_block: u64, permutation_table: [u8; N]) -> u64 {
+    let mut permutated_block: u64 = 0;
+    for index in 0..N {
+        let target_bit_index: u8 = permutation_table[index] - 1;
+        let right_shift: u8 = 63 - target_bit_index;
+
+        let bit = (u64_block >> right_shift - 8) & 1;
+
+        let new_block_with_bit: u64 = bit << (63 - index - (64 - N));
+        permutated_block |= new_block_with_bit;
+    }
+
+    return permutated_block;
+}
+
 fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
     for i in 0..1 {
         let (left, right) = pc_1_keys[0];
@@ -107,13 +125,19 @@ fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
         // combine is correct
         let combined_block = left_shifted | right;
         println!(
-            "COMBINED {} - [{}] ",
+            "COMBINED64 {} - [{}] ",
             i + 1,
             format!("{:064b}", combined_block)
         );
+        println!(
+            "COMBINED56 {} - [{}] ",
+            i + 1,
+            format!("{:056b}", combined_block)
+        );
 
-        let key = get_permutated_block(combined_block, PC_2_TABLE);
-        println!("K{} - [{}] ", i + 1, format!("{:064b}", key));
+        let key = get_permutated_block2(combined_block, PC_2_TABLE);
+        println!("K{} in 64 - [{}] ", i + 1, format!("{:064b}", key));
+        println!("K{} in 48 - [{}] ", i + 1, format!("{:048b}", key));
     }
 }
 
@@ -156,4 +180,8 @@ fn main() {
     }
 
     let permuted_pc2_keys = get_pc2_permuted_keys(permuted_pc1_keys);
+
+    // 1100
+    // 0011
+    // println!("{}", (12 >> 2));
 }
