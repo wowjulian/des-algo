@@ -64,6 +64,50 @@ fn split_permutated_key(key: u64, chunk_size: usize) -> (u64, u64) {
     let right_split_block: u64 = key & RIGHT_SPLIT_KEY_PAD;
     return (left_split_block, right_split_block);
 }
+
+// 1010
+// 0001
+// 1000 -> left most bit
+// 1000
+
+// 0100
+// 0001
+// 1000
+// 0000
+
+// 1111 1111 1111 1111 1111 1111 1111
+const BIT_PAD_28: u64 = 268435455;
+fn left_shift_28_bit_pair(left_key: u64, right_key: u64, shift_size: usize) -> (u64, u64) {
+    let mut left_shifted_key = 0;
+    let mut right_shifted_key = 0;
+    for _index in 0..shift_size {
+        let left_key_left_most_bit = (1 << 27) & left_key;
+        let right_key_left_most_bit = (1 << 27) & right_key;
+
+        let left_key_bit = (left_key_left_most_bit >> 27) & 1;
+        let right_key_bit = (right_key_left_most_bit >> 27) & 1;
+        left_shifted_key = (left_key << 1) | left_key_bit;
+        right_shifted_key = (right_key << 1) | right_key_bit;
+    }
+    return (
+        left_shifted_key & BIT_PAD_28,
+        right_shifted_key & BIT_PAD_28,
+    );
+}
+
+const PC1_SHIGT_SIZES: [usize; 16] = [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1];
+fn get_pc1_shifted_keys(left_key: u64, right_key: u64) -> [(u64, u64); 16] {
+    let mut pairs: [(u64, u64); 16] = [(0, 0); 16];
+    let mut prev_left = left_key;
+    let mut prev_right = right_key;
+    for i in 0..16 {
+        pairs[i] = left_shift_28_bit_pair(prev_left, prev_right, PC1_SHIGT_SIZES[i]);
+        prev_left = pairs[i].0;
+        prev_right = pairs[i].1;
+    }
+    return pairs;
+}
+
 fn main() {
     let args = Args::parse();
     let plaintext_input = args.plaintext;
@@ -78,11 +122,12 @@ fn main() {
 
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     println! {"plaintext binary:\n{}", format!("{:064b}", plaintext_u64_block)};
-    let permutated_block = get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE);
+    let plaintext_after_init_permutation_block =
+        get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE);
     // expected to be 1100110000000000110011001111111111110000101010101111000010101010
     println!(
         "plaintext after initaial permutation:\n{}",
-        format!("{:064b}", permutated_block)
+        format!("{:064b}", plaintext_after_init_permutation_block)
     );
 
     let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
@@ -90,5 +135,14 @@ fn main() {
     // expected to be 0000000011110000110011001010101011110101010101100110011110001111
     println! {"permutated key binary is (64):\n{}", format!("{:064b}", permutated_key_block)};
 
-    split_permutated_key(permutated_key_block, 28);
+    let (left, right) = split_permutated_key(permutated_key_block, 28);
+    println!("C{} - LEFT [{}] ", 0, format!("{:064b}", left));
+    println!("D{} - RIGHT[{}]", 0, format!("{:064b}", right));
+
+    let permuted_pc1_keys = get_pc1_shifted_keys(left, right);
+    for i in 0..16 {
+        let (left, right) = permuted_pc1_keys[i];
+        println!("C{} - LEFT [{}] ", i + 1, format!("{:064b}", left));
+        println!("D{} - RIGHT[{}]", i + 1, format!("{:064b}", right));
+    }
 }
