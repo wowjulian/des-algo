@@ -31,6 +31,11 @@ const PC_1_TABLE: [u8; 56] = [
     21, 13, 5, 28, 20, 12, 4,
 ];
 
+const PC_2_TABLE: [u8; 48] = [
+    14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4, 26, 8, 16, 7, 27, 20, 13, 2, 41, 52,
+    31, 37, 47, 55, 30, 40, 51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32,
+];
+
 fn get_permutated_block<const N: usize>(u64_block: u64, permutation_table: [u8; N]) -> u64 {
     let mut permutated_block: u64 = 0;
     for index in 0..N {
@@ -65,17 +70,6 @@ fn split_permutated_key(key: u64, chunk_size: usize) -> (u64, u64) {
     return (left_split_block, right_split_block);
 }
 
-// 1010
-// 0001
-// 1000 -> left most bit
-// 1000
-
-// 0100
-// 0001
-// 1000
-// 0000
-
-// 1111 1111 1111 1111 1111 1111 1111
 const BIT_PAD_28: u64 = 268435455;
 fn left_shift_28_bit_pair(left_key: u64, right_key: u64, shift_size: usize) -> (u64, u64) {
     let mut mutated_left_key = left_key;
@@ -104,6 +98,23 @@ fn get_pc1_shifted_keys(left_key: u64, right_key: u64) -> [(u64, u64); 16] {
         prev_right = pairs[i].1;
     }
     return pairs;
+}
+
+fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
+    for i in 0..1 {
+        let (left, right) = pc_1_keys[0];
+        let left_shifted = left << 28;
+        // combine is correct
+        let combined_block = left_shifted | right;
+        println!(
+            "COMBINED {} - [{}] ",
+            i + 1,
+            format!("{:064b}", combined_block)
+        );
+
+        let key = get_permutated_block(combined_block, PC_2_TABLE);
+        println!("K{} - [{}] ", i + 1, format!("{:064b}", key));
+    }
 }
 
 fn main() {
@@ -142,6 +153,7 @@ fn main() {
         let (left, right) = permuted_pc1_keys[i];
         println!("C{} - LEFT [{}] ", i + 1, format!("{:064b}", left));
         println!("D{} - RIGHT[{}]", i + 1, format!("{:064b}", right));
-        println!("");
     }
+
+    let permuted_pc2_keys = get_pc2_permuted_keys(permuted_pc1_keys);
 }
