@@ -19,11 +19,11 @@ const INITIAL_PERMUTATION_TABLE: [u8; 64] = [
     53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7,
 ];
 
-const INVERSE_PERMUTATION_TABLE: [u8; 64] = [
-    40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31, 38, 6, 46, 14, 54, 22, 62, 30,
-    37, 5, 45, 13, 53, 21, 61, 29, 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27,
-    34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25,
-];
+// const INVERSE_PERMUTATION_TABLE: [u8; 64] = [
+//     40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31, 38, 6, 46, 14, 54, 22, 62, 30,
+//     37, 5, 45, 13, 53, 21, 61, 29, 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27,
+//     34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25,
+// ];
 
 const PC_1_TABLE: [u8; 56] = [
     57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35, 27, 19, 11, 3, 60,
@@ -106,22 +106,10 @@ fn get_pc1_shifted_keys(left_key: u64, right_key: u64) -> [(u64, u64); 16] {
 }
 
 fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
-    for i in 0..1 {
-        let (left, right) = pc_1_keys[0];
+    for i in 0..16 {
+        let (left, right) = pc_1_keys[i];
         let left_shifted = left << 28;
-        // combine is correct
         let combined_block = left_shifted | right;
-        println!(
-            "COMBINED64 {} - [{}] ",
-            i + 1,
-            format!("{:064b}", combined_block)
-        );
-        println!(
-            "COMBINED56 {} - [{}] ",
-            i + 1,
-            format!("{:056b}", combined_block)
-        );
-
         let key = get_permutated_block(combined_block, PC_2_TABLE, 8);
         println!("K{} in 64 - [{}] ", i + 1, format!("{:064b}", key));
         println!("K{} in 48 - [{}] ", i + 1, format!("{:048b}", key));
@@ -176,8 +164,6 @@ fn main() {
         panic!("key is not hexdigit");
     }
 
-    // plaintext_input.splitn(n, pat)
-
     let plaintext_blocks = plaintext_input
         .as_bytes()
         .chunks(16)
@@ -190,8 +176,4 @@ fn main() {
         println!("{}", plaintext_input_block);
         des_encrypt(plaintext_input_block.to_string(), key_input.clone());
     }
-
-    // 1100
-    // 0011
-    // println!("{}", (12 >> 2));
 }
