@@ -62,16 +62,26 @@ fn get_permutated_block<const N: usize>(
 //     2,
 // )
 // .unwrap();
-const LEFT_SPLIT_KEY_PAD: u64 = 72057593769492480;
+const LEFT_SPLIT_KEY_PAD_56: u64 = 72057593769492480;
 // let right_split_key_pad: u64 = u64::from_str_radix(
 //     &"0000000000000000000000000000000000001111111111111111111111111111",
 //     2,
 // )
 // .unwrap();
-const RIGHT_SPLIT_KEY_PAD: u64 = 268435455;
-fn split_permutated_key(key: u64, chunk_size: usize) -> (u64, u64) {
-    let left_split_block: u64 = (key & LEFT_SPLIT_KEY_PAD) >> chunk_size;
-    let right_split_block: u64 = key & RIGHT_SPLIT_KEY_PAD;
+const RIGHT_SPLIT_KEY_PAD_56: u64 = 268435455;
+fn split_permutated_key_56(key_56: u64) -> (u64, u64) {
+    let left_split_block: u64 = (key_56 & LEFT_SPLIT_KEY_PAD_56) >> 28;
+    let right_split_block: u64 = key_56 & RIGHT_SPLIT_KEY_PAD_56;
+    return (left_split_block, right_split_block);
+}
+
+// 1111111111111111111111111111111100000000000000000000000000000000
+const LEFT_SPLIT_KEY_PAD_64: u64 = 18446744069414584320;
+// 0000000000000000000000000000000011111111111111111111111111111111
+const RIGHT_SPLIT_KEY_PAD_64: u64 = 4294967295;
+fn split_permutated_key_64(key_64: u64) -> (u64, u64) {
+    let left_split_block: u64 = (key_64 & LEFT_SPLIT_KEY_PAD_64) >> 32;
+    let right_split_block: u64 = key_64 & RIGHT_SPLIT_KEY_PAD_64;
     return (left_split_block, right_split_block);
 }
 
@@ -105,15 +115,18 @@ fn get_pc1_shifted_keys(left_key: u64, right_key: u64) -> [(u64, u64); 16] {
     return pairs;
 }
 
-fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
+fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) -> [u64; 16] {
+    let mut pc_2_keys: [u64; 16] = [0; 16];
     for i in 0..16 {
         let (left, right) = pc_1_keys[i];
         let left_shifted = left << 28;
         let combined_block = left_shifted | right;
         let key = get_permutated_block(combined_block, PC_2_TABLE, 8);
+        pc_2_keys[i] = key;
         println!("K{} in 64 - [{}] ", i + 1, format!("{:064b}", key));
         println!("K{} in 48 - [{}] ", i + 1, format!("{:048b}", key));
     }
+    return pc_2_keys;
 }
 
 fn des_encrypt(plaintext_input: String, key_input: String) {
@@ -126,13 +139,14 @@ fn des_encrypt(plaintext_input: String, key_input: String) {
         "plaintext after initaial permutation:\n{}",
         format!("{:064b}", plaintext_after_init_permutation_block)
     );
-
+    let split_init_permutated_block =
+        split_permutated_key_64(plaintext_after_init_permutation_block);
     let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
     let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
     // expected to be 0000000011110000110011001010101011110101010101100110011110001111
     println! {"permutated key binary is (64):\n{}", format!("{:064b}", permutated_key_block)};
 
-    let (left, right) = split_permutated_key(permutated_key_block, 28);
+    let (left, right) = split_permutated_key_56(permutated_key_block);
     println!("C{} - LEFT [{}] ", 0, format!("{:064b}", left));
     println!("D{} - RIGHT[{}]", 0, format!("{:064b}", right));
 
@@ -142,7 +156,6 @@ fn des_encrypt(plaintext_input: String, key_input: String) {
         println!("C{} - LEFT [{}] ", i + 1, format!("{:064b}", left));
         println!("D{} - RIGHT[{}]", i + 1, format!("{:064b}", right));
     }
-
     let permuted_pc2_keys = get_pc2_permuted_keys(permuted_pc1_keys);
 }
 
@@ -172,8 +185,6 @@ fn main() {
         .unwrap();
 
     for index in 0..plaintext_blocks.len() {
-        let plaintext_input_block = plaintext_blocks[index];
-        println!("{}", plaintext_input_block);
-        des_encrypt(plaintext_input_block.to_string(), key_input.clone());
+        des_encrypt(plaintext_blocks[index].to_string(), key_input.clone());
     }
 }
