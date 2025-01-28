@@ -136,6 +136,12 @@ fn main() {
     if !check_string_is_ascii_hexdigit(plaintext_input.clone()) {
         panic!("plaintext is not hexdigit");
     }
+    if plaintext_input.len() % 16 != 0 {
+        panic!(
+            "plaintext is not divisible by 16 hexdigit, 64 bits. Your plaintext length: {}",
+            plaintext_input.len()
+        );
+    }
     if !check_string_is_ascii_hexdigit(key_input.clone()) {
         panic!("key is not hexdigit");
     }
