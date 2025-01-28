@@ -40,12 +40,17 @@ fn check_string_is_ascii_hexdigit(s: String) -> bool {
     return s.chars().all(|c| c.is_ascii_hexdigit());
 }
 
-fn get_permutated_block<const N: usize>(u64_block: u64, permutation_table: [u8; N]) -> u64 {
+fn get_permutated_block<const N: usize>(
+    u64_block: u64,
+    permutation_table: [u8; N],
+    // u64_block empty bit count from left
+    right_shift_offset: u8,
+) -> u64 {
     let mut permutated_block: u64 = 0;
     for index in 0..N {
         let target_bit_index: u8 = permutation_table[index] - 1;
         let right_shift: u8 = 63 - target_bit_index;
-        let bit = (u64_block >> right_shift) & 1;
+        let bit = (u64_block >> right_shift - right_shift_offset) & 1;
         let new_block_with_bit: u64 = bit << (63 - index - (64 - N));
         permutated_block |= new_block_with_bit;
     }
@@ -100,24 +105,6 @@ fn get_pc1_shifted_keys(left_key: u64, right_key: u64) -> [(u64, u64); 16] {
     return pairs;
 }
 
-// 1100 == 12
-// 1100 >> 2 == 3 (0011)
-
-fn get_permutated_block2<const N: usize>(u64_block: u64, permutation_table: [u8; N]) -> u64 {
-    let mut permutated_block: u64 = 0;
-    for index in 0..N {
-        let target_bit_index: u8 = permutation_table[index] - 1;
-        let right_shift: u8 = 63 - target_bit_index;
-
-        let bit = (u64_block >> right_shift - 8) & 1;
-
-        let new_block_with_bit: u64 = bit << (63 - index - (64 - N));
-        permutated_block |= new_block_with_bit;
-    }
-
-    return permutated_block;
-}
-
 fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
     for i in 0..1 {
         let (left, right) = pc_1_keys[0];
@@ -135,7 +122,7 @@ fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
             format!("{:056b}", combined_block)
         );
 
-        let key = get_permutated_block2(combined_block, PC_2_TABLE);
+        let key = get_permutated_block(combined_block, PC_2_TABLE, 8);
         println!("K{} in 64 - [{}] ", i + 1, format!("{:064b}", key));
         println!("K{} in 48 - [{}] ", i + 1, format!("{:048b}", key));
     }
@@ -156,7 +143,7 @@ fn main() {
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     println! {"plaintext binary:\n{}", format!("{:064b}", plaintext_u64_block)};
     let plaintext_after_init_permutation_block =
-        get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE);
+        get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
     // expected to be 1100110000000000110011001111111111110000101010101111000010101010
     println!(
         "plaintext after initaial permutation:\n{}",
@@ -164,7 +151,7 @@ fn main() {
     );
 
     let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
-    let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE);
+    let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
     // expected to be 0000000011110000110011001010101011110101010101100110011110001111
     println! {"permutated key binary is (64):\n{}", format!("{:064b}", permutated_key_block)};
 
