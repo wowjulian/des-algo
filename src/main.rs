@@ -128,24 +128,7 @@ fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) {
     }
 }
 
-fn main() {
-    let args = Args::parse();
-    let plaintext_input = args.plaintext;
-    let key_input = args.key;
-
-    if !check_string_is_ascii_hexdigit(plaintext_input.clone()) {
-        panic!("plaintext is not hexdigit");
-    }
-    if plaintext_input.len() % 16 != 0 {
-        panic!(
-            "plaintext is not divisible by 16 hexdigit, 64 bits. Your plaintext length: {}",
-            plaintext_input.len()
-        );
-    }
-    if !check_string_is_ascii_hexdigit(key_input.clone()) {
-        panic!("key is not hexdigit");
-    }
-
+fn des_encrypt(plaintext_input: String, key_input: String) {
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     println! {"plaintext binary:\n{}", format!("{:064b}", plaintext_u64_block)};
     let plaintext_after_init_permutation_block =
@@ -173,6 +156,40 @@ fn main() {
     }
 
     let permuted_pc2_keys = get_pc2_permuted_keys(permuted_pc1_keys);
+}
+
+fn main() {
+    let args = Args::parse();
+    let plaintext_input = args.plaintext;
+    let key_input = args.key;
+
+    if !check_string_is_ascii_hexdigit(plaintext_input.clone()) {
+        panic!("plaintext is not hexdigit");
+    }
+    if plaintext_input.len() % 16 != 0 {
+        panic!(
+            "plaintext is not divisible by 16 hexdigit, 64 bits. Your plaintext length: {}",
+            plaintext_input.len()
+        );
+    }
+    if !check_string_is_ascii_hexdigit(key_input.clone()) {
+        panic!("key is not hexdigit");
+    }
+
+    // plaintext_input.splitn(n, pat)
+
+    let plaintext_blocks = plaintext_input
+        .as_bytes()
+        .chunks(16)
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap();
+
+    for index in 0..plaintext_blocks.len() {
+        let plaintext_input_block = plaintext_blocks[index];
+        println!("{}", plaintext_input_block);
+        des_encrypt(plaintext_input_block.to_string(), key_input.clone());
+    }
 
     // 1100
     // 0011
