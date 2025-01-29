@@ -145,7 +145,10 @@ fn some_function(block_32: u64, key: u64) -> u64 {
         let new_block_with_bit: u64 = bit << (63 - index - (16));
         permutated_block |= new_block_with_bit;
     }
+    println! {"K1:\n{}", format!("{:064b}", key)};
     println! {"ER0:\n{}", format!("{:064b}", permutated_block)};
+    println! {"K1+E(R0):\n{}", format!("{:064b}", key ^ permutated_block)};
+
     return 0;
 }
 
