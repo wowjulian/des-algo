@@ -25,6 +25,11 @@ const INITIAL_PERMUTATION_TABLE: [u8; 64] = [
 //     34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25,
 // ];
 
+const E_BIT_SELECTION_TABLE: [u8; 48] = [
+    32, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9, 8, 9, 10, 11, 12, 13, 12, 13, 14, 15, 16, 17, 16, 17, 18,
+    19, 20, 21, 20, 21, 22, 23, 24, 25, 24, 25, 26, 27, 28, 29, 28, 29, 30, 31, 32, 1,
+];
+
 const PC_1_TABLE: [u8; 56] = [
     57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35, 27, 19, 11, 3, 60,
     52, 44, 36, 63, 55, 47, 39, 31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37, 29,
@@ -129,6 +134,21 @@ fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) -> [u64; 16] {
     return pc_2_keys;
 }
 
+fn some_function(block_32: u64, key: u64) -> u64 {
+    // Block 32 is Correct
+    let mut permutated_block: u64 = 0;
+    for index in 0..48 {
+        let target_bit_index: u8 = E_BIT_SELECTION_TABLE[index] - 1;
+        let right_shift: u8 = 63 - target_bit_index;
+        let bit = (block_32 >> right_shift - 32) & 1;
+        // Check this
+        let new_block_with_bit: u64 = bit << (63 - index - (16));
+        permutated_block |= new_block_with_bit;
+    }
+    println! {"ER0:\n{}", format!("{:064b}", permutated_block)};
+    return 0;
+}
+
 fn des_encrypt(plaintext_input: String, key_input: String) {
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     println! {"plaintext binary:\n{}", format!("{:064b}", plaintext_u64_block)};
@@ -139,8 +159,6 @@ fn des_encrypt(plaintext_input: String, key_input: String) {
         "plaintext after initaial permutation:\n{}",
         format!("{:064b}", plaintext_after_init_permutation_block)
     );
-    let split_init_permutated_block =
-        split_permutated_key_64(plaintext_after_init_permutation_block);
     let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
     let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
     // expected to be 0000000011110000110011001010101011110101010101100110011110001111
@@ -157,6 +175,17 @@ fn des_encrypt(plaintext_input: String, key_input: String) {
         println!("D{} - RIGHT[{}]", i + 1, format!("{:064b}", right));
     }
     let permuted_pc2_keys = get_pc2_permuted_keys(permuted_pc1_keys);
+    let (left_split, right_split) = split_permutated_key_64(plaintext_after_init_permutation_block);
+    println!("left_split - [{}]", format!("{:064b}", left_split));
+    println!("right_split - [{}]", format!("{:064b}", right_split));
+
+    let mut prev_left_permuted_block = left_split;
+    let mut prev_right_permutated_block = right_split;
+    let current_left_permutated_block = prev_right_permutated_block;
+
+    println!("L1:{}", format!("{:064b}", current_left_permutated_block));
+    let current_right =
+        prev_left_permuted_block ^ some_function(prev_right_permutated_block, permuted_pc2_keys[0]);
 }
 
 fn main() {
