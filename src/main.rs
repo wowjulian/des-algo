@@ -19,15 +19,20 @@ const INITIAL_PERMUTATION_TABLE: [u8; 64] = [
     53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7,
 ];
 
-// const INVERSE_PERMUTATION_TABLE: [u8; 64] = [
-//     40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31, 38, 6, 46, 14, 54, 22, 62, 30,
-//     37, 5, 45, 13, 53, 21, 61, 29, 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27,
-//     34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25,
-// ];
+const INVERSE_PERMUTATION_TABLE: [u8; 64] = [
+    40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31, 38, 6, 46, 14, 54, 22, 62, 30,
+    37, 5, 45, 13, 53, 21, 61, 29, 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27,
+    34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25,
+];
 
 const E_BIT_SELECTION_TABLE: [u8; 48] = [
     32, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9, 8, 9, 10, 11, 12, 13, 12, 13, 14, 15, 16, 17, 16, 17, 18,
     19, 20, 21, 20, 21, 22, 23, 24, 25, 24, 25, 26, 27, 28, 29, 28, 29, 30, 31, 32, 1,
+];
+
+const P_TABLE: [u8; 32] = [
+    16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32, 27, 3, 9, 19,
+    13, 30, 6, 22, 11, 4, 25,
 ];
 
 const PC_1_TABLE: [u8; 56] = [
@@ -141,6 +146,10 @@ fn split_permutated_key_64(key_64: u64) -> (u64, u64) {
     let right_split_block: u64 = key_64 & RIGHT_SPLIT_KEY_PAD_64;
     return (left_split_block, right_split_block);
 }
+
+fn merge_32_block_in_reverse_order(left_64: u64, right_64: u64) -> u64 {
+    return (right_64 << 32) + left_64;
+}
 // 0000 000000 000000 111111 000000 000000 000000 000000 000000 000000 000000
 const FIRST_6BIT_IN_48: u64 = 277076930199552;
 // 0000 000000 000000 000000 111111 000000 000000 000000 000000 000000 000000
@@ -241,25 +250,13 @@ fn some_function(block_32: u64, key: u64) -> u64 {
     let b6_sub = S6_TABLE[get_s_box_row_col(b6)];
     print_u64("B6\n", b6);
 
-    // 010100
     let b7 = (key_xor_expanded_block & SEVENTH_6BIT_IN_48) >> 6;
     let b7_sub = S7_TABLE[get_s_box_row_col(b7)];
     print_u64("B7\n", b7);
 
-    // println!("B7 Row expecting 0: {}", (B7 >> 4) - 1);
-    // println!("B7 Col expecting 3: {}", (B7 & 15) - 1);
-    // println!(
-    //     "ELEMENT: {}",
-    //     get_16_col_array((B7 >> 4) - 1, (B7 & 15) - 1)
-    // );
-    print_u64("B7 SUB\n", b7_sub);
-    // Apparently real answer is 9?
-    println!("B7 SUB expecting 14: {}", b7_sub);
-
     let b8: u64 = key_xor_expanded_block & EIGHTH_6BIT_IN_48;
     let b8_sub = S8_TABLE[get_s_box_row_col(b8)];
     print_u64("B8\n", b8);
-    print_u64("B8 SUB\n", b8_sub);
 
     let sub = (b1_sub << 28)
         | (b2_sub << 24)
@@ -269,10 +266,43 @@ fn some_function(block_32: u64, key: u64) -> u64 {
         | (b6_sub << 8)
         | (b7_sub << 4)
         | (b8_sub);
+    // Expecting 01011100100000101011010110010111
     println!("SUB: {}", sub);
     print_u64("SUB: ", sub);
+    let permutated_block_after_p_table = get_permutated_block(sub, P_TABLE, 32);
+    print_u64(
+        "permutated_block_after_p_table: ",
+        permutated_block_after_p_table,
+    );
+    return permutated_block_after_p_table;
+}
 
-    return 0;
+fn run_16_rounds(plaintext_after_init_permutation_block: u64, permuted_pc2_keys: [u64; 16]) -> u64 {
+    let (left_split, right_split) = split_permutated_key_64(plaintext_after_init_permutation_block);
+    println!("left_split - [{}]", format!("{:064b}", left_split));
+    println!("right_split - [{}]", format!("{:064b}", right_split));
+
+    let mut prev_left_permuted_block = left_split;
+    let mut prev_right_permutated_block = right_split;
+    let mut current_left_permutated_block = 0;
+    println!("L1:{}", format!("{:064b}", current_left_permutated_block));
+    let mut current_right_permutated_block = 0;
+
+    for index in 0..16 {
+        current_left_permutated_block = prev_right_permutated_block;
+        current_right_permutated_block = prev_left_permuted_block
+            ^ some_function(prev_right_permutated_block, permuted_pc2_keys[index]);
+        prev_left_permuted_block = current_left_permutated_block;
+        prev_right_permutated_block = current_right_permutated_block;
+    }
+
+    print_u64("L16: ", current_left_permutated_block);
+    print_u64("R16: ", current_right_permutated_block);
+
+    return merge_32_block_in_reverse_order(
+        current_left_permutated_block,
+        current_right_permutated_block,
+    );
 }
 
 fn des_encrypt(plaintext_input: String, key_input: String) {
@@ -305,13 +335,9 @@ fn des_encrypt(plaintext_input: String, key_input: String) {
     println!("left_split - [{}]", format!("{:064b}", left_split));
     println!("right_split - [{}]", format!("{:064b}", right_split));
 
-    let mut prev_left_permuted_block = left_split;
-    let mut prev_right_permutated_block = right_split;
-    let current_left_permutated_block = prev_right_permutated_block;
-
-    println!("L1:{}", format!("{:064b}", current_left_permutated_block));
-    let current_right =
-        prev_left_permuted_block ^ some_function(prev_right_permutated_block, permuted_pc2_keys[0]);
+    let reversed_block = run_16_rounds(plaintext_after_init_permutation_block, permuted_pc2_keys);
+    let final_permutated_block = get_permutated_block(reversed_block, INVERSE_PERMUTATION_TABLE, 0);
+    print_u64("final permutation block: ", final_permutated_block);
 }
 
 fn main() {
