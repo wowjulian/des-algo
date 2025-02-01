@@ -13,7 +13,7 @@ use tables::{
 
 pub fn print_u64(label: &str, block: u64) {
     // println!("{}{}", label, format!("{:064b}", block));
-    println!("{}{}", label, format!("{:x}", block));
+    println!("{}{}", label, format!("{:016x}", block));
 }
 
 pub fn get_permutated_block<const N: usize>(
@@ -187,12 +187,40 @@ pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
     return final_permutated_block;
 }
 
+pub fn des_decrypt(plaintext_input: String, key_input: String) -> u64 {
+    let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
+    print_u64("plaintext: ", plaintext_u64_block);
+    let plaintext_after_init_permutation_block =
+        get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
+    print_u64(
+        "plaintext after initaial permutation: ",
+        plaintext_after_init_permutation_block,
+    );
+    let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
+    let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
+    print_u64("permutated key binary: ", permutated_key_block);
+
+    let (left, right) = split_permutated_key_56(permutated_key_block);
+    let permuted_pc1_keys = get_pc1_shifted_keys(left, right);
+    for i in 0..16 {
+        let (left, right) = permuted_pc1_keys[i];
+        print_u64(&format!("C[{}]: ", i + 1), left);
+        print_u64(&format!("D[{}]: ", i + 1), right);
+    }
+    let mut subkeys = get_pc2_permuted_keys(permuted_pc1_keys).clone();
+    subkeys.reverse();
+    let reversed_block = run_16_rounds(plaintext_after_init_permutation_block, subkeys);
+    let final_permutated_block: u64 =
+        get_permutated_block(reversed_block, INVERSE_PERMUTATION_TABLE, 0);
+    return final_permutated_block;
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::encrypt::des_encrypt;
+    use crate::encrypt::{des_decrypt, des_encrypt, print_u64};
 
     #[test]
-    fn first_test_case() {
+    fn encrypt_02468aceeca86420_with_0f1571c947d9e859() {
         let ciphertext = des_encrypt(
             "0123456789ABCDEF".to_string(),
             "133457799BBCDFF1".to_string(),
@@ -202,12 +230,92 @@ mod tests {
     }
 
     #[test]
-    fn second_test_case() {
+    fn encrypt_0123456789abcdef_with_133457799_bbcdff1() {
         let ciphertext = des_encrypt(
             "02468aceeca86420".to_string(),
             "0f1571c947d9e859".to_string(),
         );
         let expected: u64 = u64::from_str_radix(&"da02ce3a89ecac3b", 16).ok().unwrap();
         assert_eq!(ciphertext, expected);
+    }
+
+    #[test]
+    fn decrpyt_02468aceeca86420_with_0f1571c947d9e859() {
+        let ciphertext = des_encrypt(
+            "0123456789ABCDEF".to_string(),
+            "133457799BBCDFF1".to_string(),
+        );
+        let decrypted = des_decrypt(
+            "85e813540f0ab405".to_string(),
+            "133457799BBCDFF1".to_string(),
+        );
+        let expected_ciphertext: u64 = u64::from_str_radix(&"85e813540f0ab405", 16).ok().unwrap();
+        let expected_decrypted: u64 = u64::from_str_radix(&"0123456789ABCDEF", 16).ok().unwrap();
+        assert_eq!(ciphertext, expected_ciphertext);
+        assert_eq!(decrypted, expected_decrypted);
+    }
+
+    #[test]
+    fn decrpyt_0123456789abcdef_with_133457799_bbcdff1() {
+        let ciphertext = des_encrypt(
+            "02468aceeca86420".to_string(),
+            "0f1571c947d9e859".to_string(),
+        );
+        let decrypted = des_decrypt(
+            "da02ce3a89ecac3b".to_string(),
+            "0f1571c947d9e859".to_string(),
+        );
+        let expected_ciphertext: u64 = u64::from_str_radix(&"da02ce3a89ecac3b", 16).ok().unwrap();
+        let expected_decrypted: u64 = u64::from_str_radix(&"02468aceeca86420", 16).ok().unwrap();
+        assert_eq!(ciphertext, expected_ciphertext);
+        assert_eq!(decrypted, expected_decrypted);
+    }
+
+    #[test]
+    fn decrpyt_7772a5dc17cc382c_with_e31d1b22f059933e() {
+        let ciphertext = des_encrypt(
+            "7772A5DC17CC382C".to_string(),
+            "E31D1B22F059933E".to_string(),
+        );
+        let decrypted = des_decrypt(
+            "7C7EE7162E820D1C".to_string(),
+            "E31D1B22F059933E".to_string(),
+        );
+        let expected_ciphertext: u64 = u64::from_str_radix(&"7C7EE7162E820D1C", 16).ok().unwrap();
+        let expected_decrypted: u64 = u64::from_str_radix(&"7772A5DC17CC382C", 16).ok().unwrap();
+        assert_eq!(ciphertext, expected_ciphertext);
+        assert_eq!(decrypted, expected_decrypted);
+    }
+
+    #[test]
+    fn decrpyt_b268ed282a85a2ad_with_07511c6c9929cd75() {
+        let ciphertext = des_encrypt(
+            "b268ed282a85a2ad".to_string(),
+            "07511c6c9929cd75".to_string(),
+        );
+        let decrypted = des_decrypt(
+            "34B57D714D88E29C".to_string(),
+            "07511c6c9929cd75".to_string(),
+        );
+        let expected_ciphertext: u64 = u64::from_str_radix(&"34B57D714D88E29C", 16).ok().unwrap();
+        let expected_decrypted: u64 = u64::from_str_radix(&"b268ed282a85a2ad", 16).ok().unwrap();
+        assert_eq!(ciphertext, expected_ciphertext);
+        assert_eq!(decrypted, expected_decrypted);
+    }
+
+    #[test]
+    fn decrpyt_7e9591c91639ee65_with_c37ac5759520cd15() {
+        let ciphertext = des_encrypt(
+            "7e9591c91639ee65".to_string(),
+            "c37ac5759520cd15".to_string(),
+        );
+        let decrypted = des_decrypt(
+            "DC3C688EE9C561E6".to_string(),
+            "c37ac5759520cd15".to_string(),
+        );
+        let expected_ciphertext: u64 = u64::from_str_radix(&"DC3C688EE9C561E6", 16).ok().unwrap();
+        let expected_decrypted: u64 = u64::from_str_radix(&"7e9591c91639ee65", 16).ok().unwrap();
+        assert_eq!(ciphertext, expected_ciphertext);
+        assert_eq!(decrypted, expected_decrypted);
     }
 }

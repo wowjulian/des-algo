@@ -2,7 +2,7 @@ mod binary_pads;
 mod encrypt;
 mod tables;
 use clap::Parser;
-use encrypt::{des_encrypt, print_u64};
+use encrypt::{des_decrypt, des_encrypt, print_u64};
 
 /// Simple program to encrypt plaintext, and then show processes and, decrpyt to validate.
 #[derive(Parser, Debug)]
@@ -49,5 +49,8 @@ fn main() {
     for index in 0..plaintext_blocks.len() {
         let ciphertext = des_encrypt(plaintext_blocks[index].to_string(), key_input.clone());
         print_u64("ciphertext: ", ciphertext);
+        let ciphertext_string: String = format!("{:0x}", ciphertext);
+        let decrypted = des_decrypt(ciphertext_string.clone(), key_input.clone());
+        print_u64("dec: ", decrypted);
     }
 }
