@@ -128,40 +128,26 @@ pub fn f_function(block_32: u64, key: u64) -> u64 {
     return permutated_block_after_p_table;
 }
 
-pub fn run_16_rounds(
-    plaintext_after_init_permutation_block: u64,
-    permuted_pc2_keys: [u64; 16],
-) -> u64 {
+pub fn run_16_rounds(plaintext_after_init_permutation_block: u64, subkeys: [u64; 16]) -> u64 {
     let (left_split, right_split) = split_permutated_key_64(plaintext_after_init_permutation_block);
-    let mut prev_left_permuted_block = left_split;
-    let mut prev_right_permutated_block = right_split;
-    let mut current_left_permutated_block = 0;
-    let mut current_right_permutated_block = 0;
-
+    let mut prev_left_block = left_split;
+    let mut prev_right_block = right_split;
+    let mut left_block = 0;
+    let mut right_block = 0;
     for index in 0..16 {
-        current_left_permutated_block = prev_right_permutated_block;
-        current_right_permutated_block = prev_left_permuted_block
-            ^ f_function(prev_right_permutated_block, permuted_pc2_keys[index]);
-        prev_left_permuted_block = current_left_permutated_block;
-        prev_right_permutated_block = current_right_permutated_block;
+        left_block = prev_right_block;
+        right_block = prev_left_block ^ f_function(prev_right_block, subkeys[index]);
+        prev_left_block = left_block;
+        prev_right_block = right_block;
         let non_zero_index = index + 1;
-        print_u64(
-            &format!("L[{non_zero_index}]: "),
-            current_left_permutated_block,
-        );
-        print_u64(
-            &format!("R[{non_zero_index}]: "),
-            current_right_permutated_block,
-        );
+        print_u64(&format!("L[{non_zero_index}]: "), left_block);
+        print_u64(&format!("R[{non_zero_index}]: "), right_block);
     }
 
-    return merge_32_block_in_reverse_order(
-        current_left_permutated_block,
-        current_right_permutated_block,
-    );
+    return merge_32_block_in_reverse_order(left_block, right_block);
 }
 
-pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
+fn get_subkeys(plaintext_input: String, key_input: String) -> [u64; 16] {
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     print_u64("plaintext: ", plaintext_u64_block);
     let plaintext_after_init_permutation_block =
@@ -181,33 +167,32 @@ pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
         print_u64(&format!("C[{}]: ", i + 1), left);
         print_u64(&format!("D[{}]: ", i + 1), right);
     }
-    let permuted_pc2_keys = get_pc2_permuted_keys(permuted_pc1_keys);
-    let reversed_block = run_16_rounds(plaintext_after_init_permutation_block, permuted_pc2_keys);
+    return get_pc2_permuted_keys(permuted_pc1_keys);
+}
+
+pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
+    let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
+    let plaintext_after_init_permutation_block =
+        get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
+    print_u64(
+        "after initaial permutation: ",
+        plaintext_after_init_permutation_block,
+    );
+    let subkeys: [u64; 16] = get_subkeys(plaintext_input, key_input).clone();
+    let reversed_block = run_16_rounds(plaintext_after_init_permutation_block, subkeys);
     let final_permutated_block = get_permutated_block(reversed_block, INVERSE_PERMUTATION_TABLE, 0);
     return final_permutated_block;
 }
 
 pub fn des_decrypt(plaintext_input: String, key_input: String) -> u64 {
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
-    print_u64("plaintext: ", plaintext_u64_block);
-    let plaintext_after_init_permutation_block =
+    let plaintext_after_init_permutation_block: u64 =
         get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
     print_u64(
-        "plaintext after initaial permutation: ",
+        "after initaial permutation: ",
         plaintext_after_init_permutation_block,
     );
-    let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
-    let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
-    print_u64("permutated key binary: ", permutated_key_block);
-
-    let (left, right) = split_permutated_key_56(permutated_key_block);
-    let permuted_pc1_keys = get_pc1_shifted_keys(left, right);
-    for i in 0..16 {
-        let (left, right) = permuted_pc1_keys[i];
-        print_u64(&format!("C[{}]: ", i + 1), left);
-        print_u64(&format!("D[{}]: ", i + 1), right);
-    }
-    let mut subkeys = get_pc2_permuted_keys(permuted_pc1_keys).clone();
+    let mut subkeys: [u64; 16] = get_subkeys(plaintext_input, key_input).clone();
     subkeys.reverse();
     let reversed_block = run_16_rounds(plaintext_after_init_permutation_block, subkeys);
     let final_permutated_block: u64 =
