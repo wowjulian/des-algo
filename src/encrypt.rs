@@ -217,7 +217,7 @@ pub fn des_decrypt(plaintext_input: String, key_input: String) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::encrypt::{des_decrypt, des_encrypt, print_u64};
+    use crate::encrypt::{des_decrypt, des_encrypt};
 
     #[test]
     fn encrypt_02468aceeca86420_with_0f1571c947d9e859() {
