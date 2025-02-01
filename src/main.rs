@@ -1,5 +1,11 @@
-pub mod tables;
+mod binary_pads;
+mod tables;
 
+use binary_pads::{
+    BIT_PAD_28, EIGHTH_6BIT_IN_48, FIFTH_6BIT_IN_48, FIRST_6BIT_IN_48, FORTH_6BIT_IN_48,
+    LEFT_SPLIT_KEY_PAD_56, LEFT_SPLIT_KEY_PAD_64, RIGHT_SPLIT_KEY_PAD_56, RIGHT_SPLIT_KEY_PAD_64,
+    SECOND_6BIT_IN_48, SEVENTH_6BIT_IN_48, SIXTH_6BIT_IN_48, THIRD_6BIT_IN_48,
+};
 use clap::Parser;
 use tables::{
     E_BIT_SELECTION_TABLE, INITIAL_PERMUTATION_TABLE, INVERSE_PERMUTATION_TABLE, PC_1_TABLE,
@@ -45,33 +51,6 @@ fn get_permutated_block<const N: usize>(
     return permutated_block;
 }
 
-// 00000000111111111111111111111111 11110000000000000000000000000000
-const LEFT_SPLIT_KEY_PAD_56: u64 = 72057593769492480;
-// 00000000000000000000000000000000 00001111111111111111111111111111
-const RIGHT_SPLIT_KEY_PAD_56: u64 = 268435455;
-// 11111111111111111111111111111111 00000000000000000000000000000000
-const LEFT_SPLIT_KEY_PAD_64: u64 = 18446744069414584320;
-// 00000000000000000000000000000000 11111111111111111111111111111111
-const RIGHT_SPLIT_KEY_PAD_64: u64 = 4294967295;
-// 0000 000000 000000 111111 000000 000000 000000 000000 000000 000000 000000
-const FIRST_6BIT_IN_48: u64 = 277076930199552;
-// 0000 000000 000000 000000 111111 000000 000000 000000 000000 000000 000000
-const SECOND_6BIT_IN_48: u64 = 4329327034368;
-// 0000 000000 000000 000000 000000 111111 000000 000000 000000 000000 000000
-const THIRD_6BIT_IN_48: u64 = 67645734912;
-// 0000 000000 000000 000000 000000 000000 111111 000000 000000 000000 000000
-const FORTH_6BIT_IN_48: u64 = 1056964608;
-// 0000 000000 000000 000000 000000 000000 000000 111111 000000 000000 000000
-const FIFTH_6BIT_IN_48: u64 = 16515072;
-// 0000 000000 000000 000000 000000 000000 000000 000000 111111 000000 000000
-const SIXTH_6BIT_IN_48: u64 = 258048;
-// 0000 000000 000000 000000 000000 000000 000000 000000 000000 111111 000000
-const SEVENTH_6BIT_IN_48: u64 = 4032;
-// 0000 000000 000000 000000 000000 000000 000000 000000 000000 000000 111111
-const EIGHTH_6BIT_IN_48: u64 = 63;
-
-const BIT_PAD_28: u64 = 268435455;
-
 fn split_permutated_key_56(key_56: u64) -> (u64, u64) {
     let left_split_block: u64 = (key_56 & LEFT_SPLIT_KEY_PAD_56) >> 28;
     let right_split_block: u64 = key_56 & RIGHT_SPLIT_KEY_PAD_56;
@@ -91,11 +70,9 @@ fn merge_32_block_in_reverse_order(left_64: u64, right_64: u64) -> u64 {
 fn left_shift_28_bit_pair(left_key: u64, right_key: u64, shift_size: usize) -> (u64, u64) {
     let mut mutated_left_key = left_key;
     let mut mutated_right_key = right_key;
-
     for _index in 0..shift_size {
         let left_key_left_most_bit = (1 << 27) & mutated_left_key;
         let right_key_left_most_bit = (1 << 27) & mutated_right_key;
-
         let left_key_bit = (left_key_left_most_bit >> 27) & 1;
         let right_key_bit = (right_key_left_most_bit >> 27) & 1;
         mutated_left_key = ((mutated_left_key << 1) | left_key_bit) & BIT_PAD_28;
@@ -186,8 +163,6 @@ fn some_function(block_32: u64, key: u64) -> u64 {
         | (b6_sub << 8)
         | (b7_sub << 4)
         | (b8_sub);
-    // Expecting 01011100100000101011010110010111
-    println!("SUB: {}", sub);
     print_u64("SUB: ", sub);
     let permutated_block_after_p_table = get_permutated_block(sub, P_TABLE, 32);
     print_u64(
