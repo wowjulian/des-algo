@@ -1,6 +1,6 @@
 mod binary_pads;
 mod encrypt;
-mod tables;
+mod permutation_tables;
 use clap::Parser;
 use encrypt::{des_decrypt, des_encrypt, print_u64};
 
@@ -49,8 +49,8 @@ fn main() {
     for index in 0..plaintext_blocks.len() {
         let ciphertext = des_encrypt(plaintext_blocks[index].to_string(), key_input.clone());
         let ciphertext_string: String = format!("{:016x}", ciphertext);
-        let decrypted = des_decrypt(ciphertext_string.clone(), key_input.clone());
+        // let decrypted = des_decrypt(ciphertext_string.clone(), key_input.clone());
         print_u64("ciphertext: ", ciphertext);
-        print_u64("decrypted: ", decrypted);
+        // print_u64("decrypted: ", decrypted);
     }
 }

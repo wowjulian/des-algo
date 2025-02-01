@@ -1,11 +1,22 @@
-use crate::{binary_pads, tables};
+use crate::{binary_pads, permutation_tables};
+use tabled::{Table, Tabled};
+
+#[derive(Tabled)]
+struct DES_LOG {
+    round: &'static str,
+    Ki: &'static str,
+    Li: &'static str,
+    Ri: &'static str,
+}
+
+static DES_TABLE: Vec<DES_LOG> = vec![];
 
 use binary_pads::{
     BIT_PAD_28, EIGHTH_6BIT_IN_48, FIFTH_6BIT_IN_48, FIRST_6BIT_IN_48, FORTH_6BIT_IN_48,
     LEFT_SPLIT_KEY_PAD_56, LEFT_SPLIT_KEY_PAD_64, RIGHT_SPLIT_KEY_PAD_56, RIGHT_SPLIT_KEY_PAD_64,
     SECOND_6BIT_IN_48, SEVENTH_6BIT_IN_48, SIXTH_6BIT_IN_48, THIRD_6BIT_IN_48,
 };
-use tables::{
+use permutation_tables::{
     E_BIT_SELECTION_TABLE, INITIAL_PERMUTATION_TABLE, INVERSE_PERMUTATION_TABLE, PC1_SHIFT_SIZES,
     PC_1_TABLE, PC_2_TABLE, P_TABLE, S1_TABLE, S2_TABLE, S3_TABLE, S4_TABLE, S5_TABLE, S6_TABLE,
     S7_TABLE, S8_TABLE,
@@ -150,12 +161,6 @@ pub fn run_16_rounds(plaintext_after_init_permutation_block: u64, subkeys: [u64;
 fn get_subkeys(plaintext_input: String, key_input: String) -> [u64; 16] {
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     print_u64("plaintext: ", plaintext_u64_block);
-    let plaintext_after_init_permutation_block =
-        get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
-    print_u64(
-        "plaintext after initaial permutation: ",
-        plaintext_after_init_permutation_block,
-    );
     let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
     let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
     print_u64("permutated key binary: ", permutated_key_block);
@@ -170,7 +175,17 @@ fn get_subkeys(plaintext_input: String, key_input: String) -> [u64; 16] {
     return get_pc2_permuted_keys(permuted_pc1_keys);
 }
 
+fn populate_log_table(mut des_table: Vec<DES_LOG>, plaintext_after_init_permutation_block: u64) {
+    des_table.push(DES_LOG {
+        round: "IP",
+        Li: "",
+        Ki: "",
+        Ri: "",
+    });
+}
+
 pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
+    let des_table: Vec<DES_LOG> = vec![];
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
     let plaintext_after_init_permutation_block =
         get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
