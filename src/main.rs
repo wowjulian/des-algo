@@ -5,15 +5,15 @@ mod permutation_tables;
 use clap::Parser;
 use encrypt::{des_decrypt, des_encrypt};
 
-/// Simple program to encrypt plaintext, and then show processes and, decrpyt to validate.
+/// Simple program to encrypt plaintext using DES algorithm, show processes and then decrpyt to validate.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// 64 bit plaintext in hexdigit (16 hex digits)
+    /// Plaintext in hex code
     #[arg(short, long)]
     plaintext: String,
 
-    /// key for encryption and decryption in hexdigit
+    /// key for encryption and decryption in hex code
     #[arg(short, long)]
     key: String,
 }

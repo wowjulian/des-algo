@@ -1,8 +1,8 @@
 use crate::{
     binary_pads,
     logging::{
-        populate_inverse_ip_log_table, populate_ip_log_table, populate_round_log_table, print_u64,
-        DesLog,
+        populate_inverse_ip_log_table, populate_ip_log_table, populate_kplus_log_table,
+        populate_round_log_table, DesLog,
     },
     permutation_tables,
 };
@@ -156,10 +156,10 @@ fn run_16_rounds(
     return merge_32_block_in_reverse_order(left_block, right_block);
 }
 
-fn get_subkeys(key_input: String) -> [u64; 16] {
+fn get_subkeys(key_input: String, des_log_table: &mut Vec<DesLog>) -> [u64; 16] {
     let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
     let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
-    print_u64("permutated key binary: ", permutated_key_block);
+    populate_kplus_log_table(des_log_table, permutated_key_block);
     let (left, right) = split_permutated_key_56(permutated_key_block);
     let permuted_pc1_keys = get_pc1_shifted_keys(left, right);
     return get_pc2_permuted_keys(permuted_pc1_keys);
@@ -176,7 +176,7 @@ pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
     let plaintext_after_init_permutation_block =
         get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
     populate_ip_log_table(&mut des_log_table, plaintext_after_init_permutation_block);
-    let subkeys: [u64; 16] = get_subkeys(key_input).clone();
+    let subkeys: [u64; 16] = get_subkeys(key_input, &mut des_log_table).clone();
     let reversed_block = run_16_rounds(
         plaintext_after_init_permutation_block,
         subkeys,
@@ -199,12 +199,8 @@ pub fn des_decrypt(ciphertext: String, key_input: String) -> u64 {
     );
     let plaintext_after_init_permutation_block: u64 =
         get_permutated_block(ciphertext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
-    print_u64(
-        "after initaial permutation: ",
-        plaintext_after_init_permutation_block,
-    );
     populate_ip_log_table(&mut des_log_table, plaintext_after_init_permutation_block);
-    let mut subkeys: [u64; 16] = get_subkeys(key_input).clone();
+    let mut subkeys: [u64; 16] = get_subkeys(key_input, &mut des_log_table).clone();
     subkeys.reverse();
     let reversed_block = run_16_rounds(
         plaintext_after_init_permutation_block,

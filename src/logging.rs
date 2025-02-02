@@ -11,9 +11,19 @@ pub struct DesLog {
     value: String,
 }
 
-pub fn print_u64(label: &str, block: u64) {
+pub fn _print_u64(label: &str, block: u64) {
     // println!("{}{}", label, format!("{:064b}", block));
     println!("{}{}", label, format!("{:016x}", block));
+}
+
+pub fn populate_kplus_log_table(des_log_table: &mut Vec<DesLog>, block: u64) {
+    des_log_table.push(DesLog {
+        round: "K+".to_string(),
+        subkey: format!("{:016x}", block),
+        l: "".to_string(),
+        r: "".to_string(),
+        value: "".to_string(),
+    });
 }
 
 pub fn populate_ip_log_table(
