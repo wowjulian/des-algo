@@ -184,7 +184,7 @@ fn populate_ip_log_table(
         subkey: "".to_string(),
         l: left_ip,
         r: right_ip,
-        value: "".to_string(),
+        value: format!("{:016x}", (left << 32) | right),
     });
 }
 
