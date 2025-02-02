@@ -7,6 +7,7 @@ struct DesLog {
     subkey: String,
     l: String,
     r: String,
+    value: String,
 }
 
 use binary_pads::{
@@ -183,6 +184,7 @@ fn populate_ip_log_table(
         subkey: "".to_string(),
         l: left_ip,
         r: right_ip,
+        value: "".to_string(),
     });
 }
 
@@ -198,6 +200,22 @@ fn populate_round_log_table(
         subkey: format!("{:016x}", subkey),
         l: format!("{:016x}", left_block),
         r: format!("{:016x}", right_block),
+        value: format!("{:016x}", (left_block << 32) | right_block),
+    });
+}
+
+fn populate_inverse_ip_log_table(des_log_table: &mut Vec<DesLog>, final_permutated_block: u64) {
+    let (left_final_permutated_block, right_final_permutated_block) =
+        split_permutated_key_64(final_permutated_block);
+    des_log_table.push(DesLog {
+        round: "IP-1".to_string(),
+        subkey: "".to_string(),
+        l: format!("{:016x}", left_final_permutated_block),
+        r: format!("{:016x}", right_final_permutated_block),
+        value: format!(
+            "{:016x}",
+            (left_final_permutated_block << 32) | right_final_permutated_block
+        ),
     });
 }
 
@@ -219,14 +237,7 @@ pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
         &mut des_log_table,
     );
     let final_permutated_block = get_permutated_block(reversed_block, INVERSE_PERMUTATION_TABLE, 0);
-    let (left_final_permutated_block, right_final_permutated_block) =
-        split_permutated_key_64(final_permutated_block);
-    des_log_table.push(DesLog {
-        round: "IP-1".to_string(),
-        subkey: "".to_string(),
-        l: format!("{:016x}", left_final_permutated_block),
-        r: format!("{:016x}", right_final_permutated_block),
-    });
+    populate_inverse_ip_log_table(&mut des_log_table, final_permutated_block);
     let table: String = Table::new(&des_log_table).to_string();
     println!("{}", table);
 
@@ -246,6 +257,7 @@ pub fn des_decrypt(ciphertext: String, key_input: String) -> u64 {
         "after initaial permutation: ",
         plaintext_after_init_permutation_block,
     );
+    populate_ip_log_table(&mut des_log_table, plaintext_after_init_permutation_block);
     let mut subkeys: [u64; 16] = get_subkeys(key_input).clone();
     subkeys.reverse();
     let reversed_block = run_16_rounds(
@@ -255,6 +267,7 @@ pub fn des_decrypt(ciphertext: String, key_input: String) -> u64 {
     );
     let final_permutated_block: u64 =
         get_permutated_block(reversed_block, INVERSE_PERMUTATION_TABLE, 0);
+    populate_inverse_ip_log_table(&mut des_log_table, final_permutated_block);
     let table: String = Table::new(&des_log_table).to_string();
     println!("{}", table);
 

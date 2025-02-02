@@ -2,7 +2,7 @@ mod binary_pads;
 mod encrypt;
 mod permutation_tables;
 use clap::Parser;
-use encrypt::{des_decrypt, des_encrypt, print_u64};
+use encrypt::{des_decrypt, des_encrypt};
 
 /// Simple program to encrypt plaintext, and then show processes and, decrpyt to validate.
 #[derive(Parser, Debug)]
@@ -31,7 +31,7 @@ fn main() {
     }
     if plaintext_input.len() % 16 != 0 {
         panic!(
-            "plaintext is not divisible by 16 hexdigit, 64 bits. Your plaintext length: {}",
+            "plaintext is not divisible by 16 hexdigit. Your plaintext length: {}",
             plaintext_input.len()
         );
     }
