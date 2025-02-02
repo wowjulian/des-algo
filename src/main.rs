@@ -1,5 +1,6 @@
 mod binary_pads;
 mod encrypt;
+mod logging;
 mod permutation_tables;
 use clap::Parser;
 use encrypt::{des_decrypt, des_encrypt};

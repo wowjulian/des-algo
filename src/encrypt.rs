@@ -1,14 +1,12 @@
-use crate::{binary_pads, permutation_tables};
-use tabled::{Table, Tabled};
-
-#[derive(Tabled)]
-struct DesLog {
-    round: String,
-    subkey: String,
-    l: String,
-    r: String,
-    value: String,
-}
+use crate::{
+    binary_pads,
+    logging::{
+        populate_inverse_ip_log_table, populate_ip_log_table, populate_round_log_table, print_u64,
+        DesLog,
+    },
+    permutation_tables,
+};
+use tabled::Table;
 
 use binary_pads::{
     BIT_PAD_28, EIGHTH_6BIT_IN_48, FIFTH_6BIT_IN_48, FIRST_6BIT_IN_48, FORTH_6BIT_IN_48,
@@ -20,11 +18,6 @@ use permutation_tables::{
     PC_1_TABLE, PC_2_TABLE, P_TABLE, S1_TABLE, S2_TABLE, S3_TABLE, S4_TABLE, S5_TABLE, S6_TABLE,
     S7_TABLE, S8_TABLE,
 };
-
-pub fn print_u64(label: &str, block: u64) {
-    // println!("{}{}", label, format!("{:064b}", block));
-    println!("{}{}", label, format!("{:016x}", block));
-}
 
 pub fn get_permutated_block<const N: usize>(
     u64_block: u64,
@@ -170,53 +163,6 @@ fn get_subkeys(key_input: String) -> [u64; 16] {
     let (left, right) = split_permutated_key_56(permutated_key_block);
     let permuted_pc1_keys = get_pc1_shifted_keys(left, right);
     return get_pc2_permuted_keys(permuted_pc1_keys);
-}
-
-fn populate_ip_log_table(
-    des_log_table: &mut Vec<DesLog>,
-    plaintext_after_init_permutation_block: u64,
-) {
-    let (left, right) = split_permutated_key_64(plaintext_after_init_permutation_block);
-    let left_ip = format!("{:016x}", left);
-    let right_ip = format!("{:016x}", right);
-    des_log_table.push(DesLog {
-        round: "IP".to_string(),
-        subkey: "".to_string(),
-        l: left_ip,
-        r: right_ip,
-        value: format!("{:016x}", (left << 32) | right),
-    });
-}
-
-fn populate_round_log_table(
-    des_log_table: &mut Vec<DesLog>,
-    round: usize,
-    subkey: u64,
-    left_block: u64,
-    right_block: u64,
-) {
-    des_log_table.push(DesLog {
-        round: format!("{}", round),
-        subkey: format!("{:016x}", subkey),
-        l: format!("{:016x}", left_block),
-        r: format!("{:016x}", right_block),
-        value: format!("{:016x}", (left_block << 32) | right_block),
-    });
-}
-
-fn populate_inverse_ip_log_table(des_log_table: &mut Vec<DesLog>, final_permutated_block: u64) {
-    let (left_final_permutated_block, right_final_permutated_block) =
-        split_permutated_key_64(final_permutated_block);
-    des_log_table.push(DesLog {
-        round: "IP-1".to_string(),
-        subkey: "".to_string(),
-        l: format!("{:016x}", left_final_permutated_block),
-        r: format!("{:016x}", right_final_permutated_block),
-        value: format!(
-            "{:016x}",
-            (left_final_permutated_block << 32) | right_final_permutated_block
-        ),
-    });
 }
 
 pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
