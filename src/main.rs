@@ -49,8 +49,10 @@ fn main() {
     for index in 0..plaintext_blocks.len() {
         let ciphertext = des_encrypt(plaintext_blocks[index].to_string(), key_input.clone());
         let ciphertext_string: String = format!("{:016x}", ciphertext);
-        // let decrypted = des_decrypt(ciphertext_string.clone(), key_input.clone());
-        print_u64("ciphertext: ", ciphertext);
-        // print_u64("decrypted: ", decrypted);
+        println!("✅ ciphertext: {}\n", ciphertext_string);
+
+        let decrypted = des_decrypt(ciphertext_string.clone(), key_input.clone());
+        let decrypted_string: String = format!("{:016x}", decrypted);
+        println!("✅ decrypted: {}", decrypted_string);
     }
 }

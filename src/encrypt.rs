@@ -2,14 +2,12 @@ use crate::{binary_pads, permutation_tables};
 use tabled::{Table, Tabled};
 
 #[derive(Tabled)]
-struct DES_LOG {
-    round: &'static str,
-    Ki: &'static str,
-    Li: &'static str,
-    Ri: &'static str,
+struct DesLog {
+    round: String,
+    subkey: String,
+    l: String,
+    r: String,
 }
-
-static DES_TABLE: Vec<DES_LOG> = vec![];
 
 use binary_pads::{
     BIT_PAD_28, EIGHTH_6BIT_IN_48, FIFTH_6BIT_IN_48, FIRST_6BIT_IN_48, FORTH_6BIT_IN_48,
@@ -94,7 +92,6 @@ pub fn get_pc2_permuted_keys(pc_1_keys: [(u64, u64); 16]) -> [u64; 16] {
         let combined_block = left_shifted | right;
         let key = get_permutated_block(combined_block, PC_2_TABLE, 8);
         pc_2_keys[i] = key;
-        print_u64(&format!("K[{}]: ", i + 1), key);
     }
     return pc_2_keys;
 }
@@ -139,7 +136,11 @@ pub fn f_function(block_32: u64, key: u64) -> u64 {
     return permutated_block_after_p_table;
 }
 
-pub fn run_16_rounds(plaintext_after_init_permutation_block: u64, subkeys: [u64; 16]) -> u64 {
+fn run_16_rounds(
+    plaintext_after_init_permutation_block: u64,
+    subkeys: [u64; 16],
+    des_log_table: &mut Vec<DesLog>,
+) -> u64 {
     let (left_split, right_split) = split_permutated_key_64(plaintext_after_init_permutation_block);
     let mut prev_left_block = left_split;
     let mut prev_right_block = right_split;
@@ -150,68 +151,113 @@ pub fn run_16_rounds(plaintext_after_init_permutation_block: u64, subkeys: [u64;
         right_block = prev_left_block ^ f_function(prev_right_block, subkeys[index]);
         prev_left_block = left_block;
         prev_right_block = right_block;
-        let non_zero_index = index + 1;
-        print_u64(&format!("L[{non_zero_index}]: "), left_block);
-        print_u64(&format!("R[{non_zero_index}]: "), right_block);
+        populate_round_log_table(
+            des_log_table,
+            index + 1,
+            subkeys[index],
+            left_block,
+            right_block,
+        );
     }
-
     return merge_32_block_in_reverse_order(left_block, right_block);
 }
 
-fn get_subkeys(plaintext_input: String, key_input: String) -> [u64; 16] {
-    let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
-    print_u64("plaintext: ", plaintext_u64_block);
+fn get_subkeys(key_input: String) -> [u64; 16] {
     let key_block: u64 = u64::from_str_radix(&key_input, 16).ok().unwrap();
     let permutated_key_block: u64 = get_permutated_block(key_block, PC_1_TABLE, 0);
     print_u64("permutated key binary: ", permutated_key_block);
-
     let (left, right) = split_permutated_key_56(permutated_key_block);
     let permuted_pc1_keys = get_pc1_shifted_keys(left, right);
-    for i in 0..16 {
-        let (left, right) = permuted_pc1_keys[i];
-        print_u64(&format!("C[{}]: ", i + 1), left);
-        print_u64(&format!("D[{}]: ", i + 1), right);
-    }
     return get_pc2_permuted_keys(permuted_pc1_keys);
 }
 
-fn populate_log_table(mut des_table: Vec<DES_LOG>, plaintext_after_init_permutation_block: u64) {
-    des_table.push(DES_LOG {
-        round: "IP",
-        Li: "",
-        Ki: "",
-        Ri: "",
+fn populate_ip_log_table(
+    des_log_table: &mut Vec<DesLog>,
+    plaintext_after_init_permutation_block: u64,
+) {
+    let (left, right) = split_permutated_key_64(plaintext_after_init_permutation_block);
+    let left_ip = format!("{:016x}", left);
+    let right_ip = format!("{:016x}", right);
+    des_log_table.push(DesLog {
+        round: "IP".to_string(),
+        subkey: "".to_string(),
+        l: left_ip,
+        r: right_ip,
+    });
+}
+
+fn populate_round_log_table(
+    des_log_table: &mut Vec<DesLog>,
+    round: usize,
+    subkey: u64,
+    left_block: u64,
+    right_block: u64,
+) {
+    des_log_table.push(DesLog {
+        round: format!("{}", round),
+        subkey: format!("{:016x}", subkey),
+        l: format!("{:016x}", left_block),
+        r: format!("{:016x}", right_block),
     });
 }
 
 pub fn des_encrypt(plaintext_input: String, key_input: String) -> u64 {
-    let des_table: Vec<DES_LOG> = vec![];
+    let mut des_log_table: Vec<DesLog> = vec![];
     let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
+    println!(
+        "+----- 🔐 ENCRYPTING: {} ------+",
+        format!("{:016x}", plaintext_u64_block)
+    );
+
     let plaintext_after_init_permutation_block =
         get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
-    print_u64(
-        "after initaial permutation: ",
+    populate_ip_log_table(&mut des_log_table, plaintext_after_init_permutation_block);
+    let subkeys: [u64; 16] = get_subkeys(key_input).clone();
+    let reversed_block = run_16_rounds(
         plaintext_after_init_permutation_block,
+        subkeys,
+        &mut des_log_table,
     );
-    let subkeys: [u64; 16] = get_subkeys(plaintext_input, key_input).clone();
-    let reversed_block = run_16_rounds(plaintext_after_init_permutation_block, subkeys);
     let final_permutated_block = get_permutated_block(reversed_block, INVERSE_PERMUTATION_TABLE, 0);
+    let (left_final_permutated_block, right_final_permutated_block) =
+        split_permutated_key_64(final_permutated_block);
+    des_log_table.push(DesLog {
+        round: "IP-1".to_string(),
+        subkey: "".to_string(),
+        l: format!("{:016x}", left_final_permutated_block),
+        r: format!("{:016x}", right_final_permutated_block),
+    });
+    let table: String = Table::new(&des_log_table).to_string();
+    println!("{}", table);
+
     return final_permutated_block;
 }
 
-pub fn des_decrypt(plaintext_input: String, key_input: String) -> u64 {
-    let plaintext_u64_block = u64::from_str_radix(&plaintext_input, 16).ok().unwrap();
+pub fn des_decrypt(ciphertext: String, key_input: String) -> u64 {
+    let mut des_log_table: Vec<DesLog> = vec![];
+    let ciphertext_u64_block = u64::from_str_radix(&ciphertext, 16).ok().unwrap();
+    println!(
+        "+----- 🔓 DECRYPTING: {} ------+",
+        format!("{:016x}", ciphertext_u64_block)
+    );
     let plaintext_after_init_permutation_block: u64 =
-        get_permutated_block(plaintext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
+        get_permutated_block(ciphertext_u64_block, INITIAL_PERMUTATION_TABLE, 0);
     print_u64(
         "after initaial permutation: ",
         plaintext_after_init_permutation_block,
     );
-    let mut subkeys: [u64; 16] = get_subkeys(plaintext_input, key_input).clone();
+    let mut subkeys: [u64; 16] = get_subkeys(key_input).clone();
     subkeys.reverse();
-    let reversed_block = run_16_rounds(plaintext_after_init_permutation_block, subkeys);
+    let reversed_block = run_16_rounds(
+        plaintext_after_init_permutation_block,
+        subkeys,
+        &mut des_log_table,
+    );
     let final_permutated_block: u64 =
         get_permutated_block(reversed_block, INVERSE_PERMUTATION_TABLE, 0);
+    let table: String = Table::new(&des_log_table).to_string();
+    println!("{}", table);
+
     return final_permutated_block;
 }
 
