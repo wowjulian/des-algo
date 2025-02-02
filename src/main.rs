@@ -30,12 +30,6 @@ fn main() {
     if !check_string_is_ascii_hexdigit(plaintext_input.clone()) {
         panic!("plaintext is not hexdigit");
     }
-    if plaintext_input.len() % 16 != 0 {
-        panic!(
-            "plaintext is not divisible by 16 hexdigit. Your plaintext length: {}",
-            plaintext_input.len()
-        );
-    }
     if !check_string_is_ascii_hexdigit(key_input.clone()) {
         panic!("key is not hexdigit");
     }
@@ -48,7 +42,8 @@ fn main() {
         .unwrap();
 
     for index in 0..plaintext_blocks.len() {
-        let ciphertext = des_encrypt(plaintext_blocks[index].to_string(), key_input.clone());
+        let plaintext = format!("{:0<16}", plaintext_blocks[index]);
+        let ciphertext = des_encrypt(plaintext.to_string(), key_input.clone());
         let ciphertext_string: String = format!("{:016x}", ciphertext);
         println!("✅ ciphertext: {}\n", ciphertext_string);
 
