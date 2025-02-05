@@ -124,3 +124,19 @@ test encrypt::tests::decrpyt_0123456789abcdef_with_133457799_bbcdff1 ... ok
 test encrypt::tests::decrpyt_b268ed282a85a2ad_with_07511c6c9929cd75 ... ok
 test encrypt::tests::decrpyt_7e9591c91639ee65_with_c37ac5759520cd15 ... ok
 ```
+
+### Help
+
+`cargo run -- --help`
+
+```
+Simple program to encrypt plaintext using DES algorithm, show processes and then decrpyt to validate
+
+Usage: des-algo.exe --plaintext <PLAINTEXT> --key <KEY>
+
+Options:
+  -p, --plaintext <PLAINTEXT>  Plaintext in hex code
+  -k, --key <KEY>              key for encryption and decryption in hex code
+  -h, --help                   Print help
+  -V, --version                Print version
+```
