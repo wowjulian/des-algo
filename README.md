@@ -109,3 +109,18 @@ cargo run -- --plaintext '02468aceeca86420' --key '0f1571c947d9e859'
 +-------+------------------+------------------+------------------+------------------+
 ✅ decrypted: 02468aceeca86420
 ```
+
+### Tests
+
+Run `cargo test`.
+
+```
+running 7 tests
+test encrypt::tests::encrypt_0123456789abcdef_with_133457799_bbcdff1 ... ok
+test encrypt::tests::encrypt_02468aceeca86420_with_0f1571c947d9e859 ... ok
+test encrypt::tests::decrpyt_7772a5dc17cc382c_with_e31d1b22f059933e ... ok
+test encrypt::tests::decrpyt_02468aceeca86420_with_0f1571c947d9e859 ... ok
+test encrypt::tests::decrpyt_0123456789abcdef_with_133457799_bbcdff1 ... ok
+test encrypt::tests::decrpyt_b268ed282a85a2ad_with_07511c6c9929cd75 ... ok
+test encrypt::tests::decrpyt_7e9591c91639ee65_with_c37ac5759520cd15 ... ok
+```
